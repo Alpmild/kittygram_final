@@ -3,25 +3,36 @@ version: '3'
 volumes:
   pg_data:
   static:
+  media:  # Новый том для пользовательских загрузок
 
 services:
   db:
     image: postgres:13
+    env_file: .env  # Подключаем переменные для инициализации БД
     volumes:
       - pg_data:/var/lib/postgresql/data
+
   backend:
     build: ./backend/
-    env_file: .env
+    env_file: .env  # Подключаем переменные для связи с БД
+    volumes:
+      - static:/app/static/  # Сбор статики админки
+      - media:/app/media/    # Место для загруженных фото котиков
+    depends_on:
+      - db
+
   frontend:
-    env_file: .env
     build: ./frontend/
+    env_file: .env
     command: cp -r /app/build/. /static/
     volumes:
       - static:/static
+
   gateway:
     build: ./nginx/
     env_file: .env
     ports:
       - 9000:80
     volumes:
-      - static:/static
+      - static:/static/
+      - media:/media/  # Nginx будет раздавать загруженные файлы напрямую
